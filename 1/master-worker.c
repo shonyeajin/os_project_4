@@ -46,11 +46,14 @@ void *generate_requests_loop(void *data)
 			//아이템 다 만들면 종료
       if(item_to_produce >= total_items) {
 			  pthread_mutex_unlock(&mutex_master);
+			  pthread_cond_broadcast(&cond_worker);
 			  break;
       }
-	  if(curr_buf_size==max_buf_size)
+	  if(curr_buf_size==max_buf_size){
+			  pthread_cond_broadcast(&cond_worker);
 			  pthread_cond_wait(&cond_master,&mutex_master);
 
+	  }
 
  
 
@@ -58,7 +61,6 @@ void *generate_requests_loop(void *data)
       buffer[curr_buf_size++] = item_to_produce;
       print_produced(item_to_produce, thread_id);
       item_to_produce++;
-	  pthread_cond_broadcast(&cond_worker);
 
 	  pthread_mutex_unlock(&mutex_master);//master끼리의 unlock
 
@@ -80,17 +82,17 @@ void *consume_requests_loop(void *data)
 				pthread_mutex_lock(&mutex_master);
 				//아이템 다 소비하면 종료
 				//버퍼 비어있으면 wait
-				if(item_to_consume==0){
+				if(item_to_consume<=0){
 						pthread_mutex_unlock(&mutex_master);
 						break;
 				}
 
-				if(curr_buf_size==-1){
+				if(curr_buf_size<=0){
+						pthread_cond_broadcast(&cond_master);
 						pthread_cond_wait(&cond_worker,&mutex_master);
 				}
 				print_consumed(buffer[--curr_buf_size],thread_id);
 				item_to_consume--;
-				pthread_cond_broadcast(&cond_master);
 				pthread_mutex_unlock(&mutex_master);
 
 
@@ -170,11 +172,12 @@ int main(int argc, char *argv[])
    pthread_cond_destroy(&cond_worker);
   
   /*----Deallocating Buffers---------------------*/
-  free(buffer);
   free(master_thread_id);
   free(master_thread);
   free(worker_thread_id);
   free(worker_thread);
+
+  free(buffer);
   
   return 0;
 }
