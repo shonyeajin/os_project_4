@@ -183,13 +183,13 @@ int main(int argc, char *argv[])
    pthread_cond_destroy(&cond_worker);
   
   /*----Deallocating Buffers---------------------*/
-
+/*
   free(worker_thread);
   free(worker_thread_id);
   free(master_thread);
   free(master_thread_id);
   free(buffer);
-
+*/
   
   return 0;
 }
