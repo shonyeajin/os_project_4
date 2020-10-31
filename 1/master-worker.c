@@ -7,9 +7,6 @@
 #include <wait.h>
 #include <pthread.h>
 
-//해야 할것-> consume처럼 generate도 다 포함시키고 exit전에 unlock시키는 알고로 짜보고
-//wait시킮떄도 unlock시켜보기..?
-
 
 int item_to_produce, curr_buf_size, item_to_consume;
 int total_items, max_buf_size, num_workers, num_masters;
@@ -52,6 +49,13 @@ void *generate_requests_loop(void *data)
 	  if(curr_buf_size==max_buf_size){
 			  pthread_cond_broadcast(&cond_worker);
 			  pthread_cond_wait(&cond_master,&mutex_master);
+			  
+		      if(item_to_produce >= total_items) {
+				  pthread_mutex_unlock(&mutex_master);
+				  pthread_cond_broadcast(&cond_worker);
+				  break;
+			  }
+
 
 	  }
 
@@ -90,6 +94,13 @@ void *consume_requests_loop(void *data)
 				if(curr_buf_size<=0){
 						pthread_cond_broadcast(&cond_master);
 						pthread_cond_wait(&cond_worker,&mutex_master);
+
+						if(item_to_consume<=0){
+								pthread_mutex_unlock(&mutex_master);
+								break;
+						}
+
+
 				}
 				print_consumed(buffer[--curr_buf_size],thread_id);
 				item_to_consume--;
@@ -172,12 +183,13 @@ int main(int argc, char *argv[])
    pthread_cond_destroy(&cond_worker);
   
   /*----Deallocating Buffers---------------------*/
-  free(master_thread_id);
-  free(master_thread);
-  free(worker_thread_id);
-  free(worker_thread);
 
+  free(worker_thread);
+  free(worker_thread_id);
+  free(master_thread);
+  free(master_thread_id);
   free(buffer);
+
   
   return 0;
 }

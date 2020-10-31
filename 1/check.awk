@@ -22,7 +22,7 @@ END {
 			count++;
 		}
 		else {
-#			printf("%d\t%d\t%d\n", i, prod[i], cons[i]);	
+			printf("%d\t%d\t%d\n", i, prod[i], cons[i]);	
 		}
 	}
 	if (count == MAX) {
