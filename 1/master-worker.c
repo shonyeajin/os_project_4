@@ -7,10 +7,16 @@
 #include <wait.h>
 #include <pthread.h>
 
+//해야 할것-> consume처럼 generate도 다 포함시키고 exit전에 unlock시키는 알고로 짜보고
+//wait시킮떄도 unlock시켜보기..?
+
+
 int item_to_produce, curr_buf_size, item_to_consume;
 int total_items, max_buf_size, num_workers, num_masters;
 
 pthread_mutex_t mutex_master=PTHREAD_MUTEX_INITIALIZER;//쓰레드 초기화
+pthread_cond_t cond_master=PTHREAD_COND_INITIALIZER;//cond 초기화
+pthread_cond_t cond_worker=PTHREAD_COND_INITIALIZER;//cond 초기화
 
 int *buffer;
 
@@ -35,16 +41,24 @@ void *generate_requests_loop(void *data)
   while(1)
     {
 
-      if(item_to_produce >= total_items||curr_buf_size==max_buf_size) {
+	  pthread_mutex_lock(&mutex_master);//master끼리의 lock
+			//버퍼 꽉차면 기달
+			//아이템 다 만들면 종료
+      if(item_to_produce >= total_items) {
+			  pthread_mutex_unlock(&mutex_master);
 			  break;
       }
+	  if(curr_buf_size==max_buf_size)
+			  pthread_cond_wait(&cond_master,&mutex_master);
+
+
  
 
-	  pthread_mutex_lock(&mutex_master);//master끼리의 lock
 
       buffer[curr_buf_size++] = item_to_produce;
       print_produced(item_to_produce, thread_id);
       item_to_produce++;
+	  pthread_cond_broadcast(&cond_worker);
 
 	  pthread_mutex_unlock(&mutex_master);//master끼리의 unlock
 
@@ -62,11 +76,23 @@ void *consume_requests_loop(void *data)
 		while(1)
 		{
 
-				if(curr_buf_size==-1){
+
+				pthread_mutex_lock(&mutex_master);
+				//아이템 다 소비하면 종료
+				//버퍼 비어있으면 wait
+				if(item_to_consume==0){
+						pthread_mutex_unlock(&mutex_master);
 						break;
+				}
+
+				if(curr_buf_size==-1){
+						pthread_cond_wait(&cond_worker,&mutex_master);
 				}
 				print_consumed(buffer[--curr_buf_size],thread_id);
 				item_to_consume--;
+				pthread_cond_broadcast(&cond_master);
+				pthread_mutex_unlock(&mutex_master);
+
 
 
 				
@@ -140,6 +166,8 @@ int main(int argc, char *argv[])
     }
   
    pthread_mutex_destroy(&mutex_master);
+   pthread_cond_destroy(&cond_master);
+   pthread_cond_destroy(&cond_worker);
   
   /*----Deallocating Buffers---------------------*/
   free(buffer);
