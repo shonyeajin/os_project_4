@@ -10,6 +10,8 @@
 int item_to_produce, curr_buf_size, item_to_consume;
 int total_items, max_buf_size, num_workers, num_masters;
 
+pthread_mutex_t mutex_master=PTHREAD_MUTEX_INITIALIZER;//쓰레드 초기화
+
 int *buffer;
 
 void print_produced(int num, int master) {
@@ -34,12 +36,18 @@ void *generate_requests_loop(void *data)
     {
 
       if(item_to_produce >= total_items||curr_buf_size==max_buf_size) {
-	break;
+			  break;
       }
  
+
+	  pthread_mutex_lock(&mutex_master);//master끼리의 lock
+
       buffer[curr_buf_size++] = item_to_produce;
       print_produced(item_to_produce, thread_id);
       item_to_produce++;
+
+	  pthread_mutex_unlock(&mutex_master);//master끼리의 unlock
+
     }
   return 0;
 }
@@ -58,7 +66,7 @@ void *consume_requests_loop(void *data)
 						break;
 				}
 				print_consumed(buffer[--curr_buf_size],thread_id);
-				item_to_cunsume--;
+				item_to_consume--;
 
 
 				
@@ -97,6 +105,8 @@ int main(int argc, char *argv[])
 
    buffer = (int *)malloc (sizeof(int) * max_buf_size);
 
+
+
    //create master producer threads
    master_thread_id = (int *)malloc(sizeof(int) * num_masters);//마스터 스레드 아이디 메모리 할당
    master_thread = (pthread_t *)malloc(sizeof(pthread_t) * num_masters);//마스터 스레드 자체 메모리 할당
@@ -129,6 +139,7 @@ int main(int argc, char *argv[])
       printf("worker %d joined\n", i);
     }
   
+   pthread_mutex_destroy(&mutex_master);
   
   /*----Deallocating Buffers---------------------*/
   free(buffer);
