@@ -22,7 +22,7 @@ void *Reader(void* arg)
 	indx++;
 	pthread_spin_unlock(&spinlock);
 
-	// printf("Reader: %d has acquired the lock\n", threadNUmber);
+	printf("Reader: %d has acquired the lock\n", threadNUmber);
 	usleep(10000);
 
 	pthread_spin_lock(&spinlock);
@@ -32,7 +32,7 @@ void *Reader(void* arg)
 
 	// Releasing the Lock
 	r_unlock(&rwlock);
-	// printf("Reader: %d has released the lock\n",threadNUmber);
+	printf("Reader: %d has released the lock\n",threadNUmber);
 }
 
 void *Writer(void* arg)
@@ -47,7 +47,7 @@ void *Writer(void* arg)
 	indx++;
 	pthread_spin_unlock(&spinlock);
 
-	// printf("Writer: %d has acquired the lock\n",threadNUmber);
+	printf("Writer: %d has acquired the lock\n",threadNUmber);
   usleep(10000);
 
 	pthread_spin_lock(&spinlock);
@@ -57,7 +57,7 @@ void *Writer(void* arg)
 
 	// Releasing the Lock
 	w_unlock(&rwlock);
-	// printf("Writer: %d has released the lock\n",threadNUmber);
+	printf("Writer: %d has released the lock\n",threadNUmber);
 }
 
 int main(int argc, char *argv[])
@@ -138,8 +138,11 @@ int main(int argc, char *argv[])
 	}
 
 
-	for(int i=0;i<num_threads; i++)
+	for(int i=0;i<num_threads; i++){
+		printf("check!: %d,%d,%d,%d,%d,%d\n",rwlock.read_type,rwlock.write_type,rwlock.num_read_waits,rwlock.num_write_waits,rwlock.read_state,rwlock.write_state);
+	
 		pthread_join(threads[i],NULL);
+	}
 
 	// for(int i=0; i<read_num_threads*2; i++)
 	// 	printf("Reader %d Lock Time: %ld Unlock Time: %ld\n", i, readerAcquireTime[i], readerReleaseTime[i]);
