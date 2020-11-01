@@ -5,6 +5,15 @@
 
 struct rw_lock
 {
+		int read_type;
+		int write_type;
+		int num_read_waits;
+		int num_write_waits;
+		int read_state;
+		int write_state;
+
+
+
 
 };
 
