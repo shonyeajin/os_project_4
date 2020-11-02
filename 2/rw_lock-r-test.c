@@ -45,7 +45,7 @@ void r_unlock(struct rw_lock * rw)
 {
   //	Write the code for releasing read-write lock by the reader.
 		rw->read_state--;
-		if(rw->read_state==0){
+		if(rw->read_state==0&&rw->num_read_waits==0){
 				rw->read_type=0;
 				if(rw->num_write_waits>0)
 						pthread_cond_signal(&cond_write);
@@ -56,7 +56,8 @@ void r_unlock(struct rw_lock * rw)
 void w_lock(struct rw_lock * rw)
 {
   //	Write the code for aquiring read-write lock by the writer.
-		if(rw->read_type==1||rw->write_type==1||rw->num_read_waits>0){
+		usleep(100000);
+		if(rw->read_type==1||rw->write_type==1/*||rw->num_read_waits>0*/){
 				rw->num_write_waits++;
 				pthread_cond_wait(&cond_write,&mutex);
 				rw->num_write_waits--;
