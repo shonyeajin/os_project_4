@@ -6,7 +6,7 @@
 #include <signal.h>
 #include <wait.h>
 #include <pthread.h>
-#include <unistd.h>
+
 
 int item_to_produce, curr_buf_size, item_to_consume;
 int total_items, max_buf_size, num_workers, num_masters;
@@ -49,7 +49,6 @@ void *generate_requests_loop(void *data)
 	  if(curr_buf_size==max_buf_size){
 			  pthread_cond_broadcast(&cond_worker);
 			  pthread_cond_wait(&cond_master,&mutex_master);
-
 			  
 		      if(item_to_produce >= total_items) {
 				  pthread_mutex_unlock(&mutex_master);
@@ -60,14 +59,12 @@ void *generate_requests_loop(void *data)
 
 	  }
 
-	  if(curr_buf_size<0){
-			  curr_buf_size=0;
-	  }else{
+ 
 
-			  buffer[curr_buf_size++] = item_to_produce;
-			  print_produced(item_to_produce, thread_id);
-			  item_to_produce++;
-	  }
+
+      buffer[curr_buf_size++] = item_to_produce;
+      print_produced(item_to_produce, thread_id);
+      item_to_produce++;
 
 	  pthread_mutex_unlock(&mutex_master);//master끼리의 unlock
 
@@ -89,36 +86,24 @@ void *consume_requests_loop(void *data)
 				pthread_mutex_lock(&mutex_master);
 				//아이템 다 소비하면 종료
 				//버퍼 비어있으면 wait
-				if(item_to_consume<1){
+				if(item_to_consume<=0){
 						pthread_mutex_unlock(&mutex_master);
 						break;
 				}
 
 				if(curr_buf_size<=0){
+						pthread_cond_broadcast(&cond_master);
+						pthread_cond_wait(&cond_worker,&mutex_master);
+
 						if(item_to_consume<=0){
 								pthread_mutex_unlock(&mutex_master);
 								break;
 						}
 
 
-						pthread_cond_broadcast(&cond_master);
-						pthread_cond_wait(&cond_worker,&mutex_master);
-								
-
 				}
-
-				if(curr_buf_size<0){
-						curr_buf_size=0;
-				}else if(curr_buf_size==0){
-						//pthread_mutex_unlock(&mutex_master);
-						//break;
-				}else if(buffer[--curr_buf_size]!=-1){//and 조건으로 curr_buf_size>0
-
-						print_consumed(buffer[curr_buf_size],thread_id);
-						buffer[curr_buf_size]=-1;
-						item_to_consume--;
-				
-				}
+				print_consumed(buffer[--curr_buf_size],thread_id);
+				item_to_consume--;
 				pthread_mutex_unlock(&mutex_master);
 
 
