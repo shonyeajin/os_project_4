@@ -11,12 +11,11 @@
 
 #define NUM_THREADS 3
 #define NUM_ITER 10
-/*
+
 SSU_Sem first;
 SSU_Sem second;
 SSU_Sem third;
-*/
-SSU_Sem *SEM[NUM_THREADS];
+
 
 void *justprint(void *data)
 {
@@ -25,44 +24,31 @@ void *justprint(void *data)
 
   for(int i=0; i < NUM_ITER; i++)
     {
-			/*
 			switch(thread_id){
 					case 0:
-							SSU_Sem_down(SEM[0]);
+							SSU_Sem_down(&first);
 							break;
 					case 1:
-							SSU_Sem_down(SEM[1]);
+							SSU_Sem_down(&second);
 							break;
 					case 2:
-							SSU_Sem_down(SEM[2]);
+							SSU_Sem_down(&third);
 							break;
-			}
-			*/
-			for(int j=0;j<NUM_THREADS;j++){
-					if(thread_id==j)
-							SSU_Sem_down(SEM[j]);
 			}
 
       printf("This is thread %d\n", thread_id);
-	  /*
 
 			switch(thread_id){
 					case 0:
-							SSU_Sem_up(SEM[1]);
+							SSU_Sem_up(&second);
 							break;
 					case 1:
-							SSU_Sem_up(SEM[2]);
+							SSU_Sem_up(&third);
 							break;
 					case 2:
-							SSU_Sem_up(SEM[0]);
+							SSU_Sem_up(&first);
 							break;
 			}
-			*/
-			for(int j=0;j<NUM_THREADS;j++){
-					if(thread_id==j)
-							SSU_Sem_up(SEM[(j+1)%NUM_THREADS]);
-			}
-
 
 
 
@@ -76,18 +62,11 @@ int main(int argc, char *argv[])
 
   pthread_t mythreads[NUM_THREADS];
   int mythread_id[NUM_THREADS];
-/*
+
   SSU_Sem_init(&first,0);
   SSU_Sem_init(&second,0);
   SSU_Sem_init(&third,0);
-*/
-  for(int i=0;i<NUM_THREADS;i++){
-		  SEM[i]=(SSU_Sem *)malloc(sizeof(SSU_Sem));
-		  SSU_Sem_init(SEM[i],0);
-  }
 
-
-  
   
   for(int i =0; i < NUM_THREADS; i++)
     {
@@ -96,17 +75,12 @@ int main(int argc, char *argv[])
     }
 
   usleep(100000);
-  SSU_Sem_up(SEM[0]);
+  SSU_Sem_up(&first);
   
   for(int i =0; i < NUM_THREADS; i++)
     {
       pthread_join(mythreads[i], NULL);
     }
-
-  for(int i=0;i<NUM_THREADS;i++){
-		  free(SEM[i]);
-  }
-  free(*SEM);
-
+  
   return 0;
 }
